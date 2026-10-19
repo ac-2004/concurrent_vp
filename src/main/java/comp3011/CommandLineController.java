@@ -32,6 +32,9 @@ public class CommandLineController {
     private Integer displayId;
     private File videoFile;
     private String errorMessage;
+    
+    // store requested video effects in command-line order
+    private final List<String> requestedEffects = new ArrayList<>();
 
     public CommandLineController(String[] args) {
         this.args = args.clone();
@@ -46,6 +49,11 @@ public class CommandLineController {
 
     public File getVideoFile() {
         return videoFile;
+    }
+    
+    // return requested video effects in original order
+    public List<String> getRequestedEffects() {
+    	return List.copyOf(requestedEffects);
     }
 
     public String getErrorMessage() {
@@ -84,12 +92,19 @@ public class CommandLineController {
             } else if ("-1".equals(arg) || "--monitor-1".equals(arg)) {
                 setDisplayId(1);
             } else if ("-2".equals(arg) || "--monitor-2".equals(arg)) {
-                setDisplayId(2);
+            	setDisplayId(2);
+            } else if (getEffectCode(arg) != null) {
+            	// store identifier
+            	requestedEffects.add(getEffectCode(arg));
+            } else if (arg.startsWith("-") && !arg.startsWith("--") && arg.length() > 1) {
+            	// interpret individual or stacked short-form options
+            	parseShortOptions(arg);
             } else if (arg.startsWith("-")) {
-                errorMessage = "Unknown option: " + arg;
+            	errorMessage = "unknown option: " + arg;
             } else {
-                videoFiles.add(arg);
+            	videoFiles.add(arg);
             }
+            
         }
 
         if (videoFiles.size() > 1) {
@@ -113,6 +128,52 @@ public class CommandLineController {
             return;
         }
         this.displayId = displayId;
+    }
+    
+    // process command-line options
+    private void parseShortOptions(String arg) {
+    	// skip index 0 as it has '-' prefix
+    	for (int i = 1; i < arg.length(); i++) {
+    		char option = arg.charAt(i);
+    		
+    		switch (option) {
+    			// existing settings
+	    		case 'h' -> helpRequested = true;
+	    		case 'a' -> audioRequested = true;
+	            case 'x' -> maximiseRequested = true;
+	            case '1' -> setDisplayId(1);
+	            case '2' -> setDisplayId(2);
+	            
+	            // frame-processing options
+	            case 'n', 's', 'f', 'w', 'y', 'v',
+	            'd', 'j', 'm', 'b', 'p' ->
+	            	requestedEffects.add(String.valueOf(option));
+	            	
+	            // handle unrecognised options
+	            default -> {
+	            	errorMessage = "unknown option: -" + option;
+	            	return;
+	            }
+    		}
+    	}
+    }
+    
+    // convert effect option into short identifier
+    private String getEffectCode(String option) {
+    	return switch (option) {
+    	case "--number-frames"	-> "n";
+    	case "--scratch-frames"	-> "s";
+    	case "--flicker-frames"	-> "f";
+        case "--black-and-white"-> "w";
+        case "--yellow-frames"	-> "y";
+        case "--vignette-frames"-> "v";
+        case "--dust-frames"    -> "d";
+        case "--jitter-frames"  -> "j";
+        case "--mottle-frames"  -> "m";
+        case "--bleed-frames"   -> "b";
+        case "--pepper-frames"  -> "p";
+        default                 -> null;
+    	};
     }
 
     private void printHelp() {

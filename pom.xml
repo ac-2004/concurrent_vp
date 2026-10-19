@@ -34,6 +34,13 @@
       <artifactId>javacv-platform</artifactId>
       <version>${javacv.version}</version>
     </dependency>
+    <!-- JUnit 5: used for automated unit and regression testing. -->
+	<dependency>
+	    <groupId>org.junit.jupiter</groupId>
+	    <artifactId>junit-jupiter</artifactId>
+	    <version>5.11.4</version>
+	    <scope>test</scope>
+	</dependency>
   </dependencies>
 
   <build>
@@ -50,6 +57,12 @@
             </options>
         </configuration>
       </plugin>
+      <!-- Runs JUnit 5 tests during Maven's test and verify phases. -->
+	  <plugin>
+		  <groupId>org.apache.maven.plugins</groupId>
+	      <artifactId>maven-surefire-plugin</artifactId>
+	      <version>3.5.2</version>
+	  </plugin>
     </plugins>
   </build>
 
