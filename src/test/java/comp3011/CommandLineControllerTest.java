@@ -88,5 +88,76 @@ public class CommandLineControllerTest {
 		
 		assertEquals(1, controller.getExitCode());
 	}
+	
+	// verifying all 11 frame-processing options are recognised and stored in the same order as requested.
+	@Test
+	void optionsRecognised() {
+		// arrange part
+		String[] args = {
+			"--number-frames",
+	        "--scratch-frames",
+	        "--flicker-frames",
+	        "--black-and-white",
+	        "--yellow-frames",
+	        "--vignette-frames",
+	        "--dust-frames",
+	        "--jitter-frames",
+	        "--mottle-frames",
+	        "--bleed-frames",
+	        "--pepper-frames",
+	        "--help"
+		};
+		
+		// expected
+		List<String> expected = List.of(
+	        "n", "s", "f", "w", "y", "v", "d", "j", "m", "b", "p"
+	    );
+		
+		// act
+		CommandLineController controller = new CommandLineController(args);
+		
+		// assert
+		assertEquals(expected, controller.getRequestedEffects());
+	}
+	
+	// verify complete stacked argument from assignment is parsed correctly
+	@Test
+	void fullArg() {
+		// arrange
+		String[] args = {
+	        "-nssnfwyvdjmbp",
+	        "--help"
+	    };
+		
+		List<String> expected = List.of(
+	        "n", "s", "s", "n", "f", "w",
+	        "y", "v", "d", "j", "m", "b", "p"
+	    );
+		
+		CommandLineController controller = new CommandLineController(args);
+		
+		assertEquals(expected, controller.getRequestedEffects());
+	}
+	
+	// making sure original options still work
+	@Test
+	void originalOptionsTest() {
+		String[] args = {
+	        "-a",              // Enable audio
+	        "-x",              // Maximise player
+	        "-jf",             // Jitter and flicker
+	        "--dust-frames",   // Dust
+	        "--help"
+	    };
+		
+		CommandLineController controller = new CommandLineController(args);
+		
+		assertEquals(
+	        List.of("j", "f", "d"),
+	        controller.getRequestedEffects()
+	    );
+		
+		assertNull(controller.getErrorMessage());
+	}
 }
 

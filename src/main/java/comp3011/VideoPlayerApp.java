@@ -42,9 +42,17 @@ public class VideoPlayerApp extends Application {
     @Override
     public void start(Stage stage) {
         this.stage = stage;
+        
+        // added: construct new processor for every effect
+        List<FrameProcessor> processors = commandLineController
+        		.getRequestedEffects()
+        		.stream()
+        		.map(FrameProcessorFactory::create)
+        		.toList();
 
         controller = new VideoPlayerController(
                 commandLineController.isAudioRequested(),
+                processors, //line added
                 this::setVideoSize);
 
         Scene scene = new Scene(controller.getView().getRoot());

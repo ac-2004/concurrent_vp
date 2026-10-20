@@ -11,12 +11,15 @@
 package comp3011;
 
 import java.io.File;
+
 import java.util.function.BiConsumer;
 
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+
+import java.util.List;
 
 /**
  * The controller part of the video player model-view-controller architecture.
@@ -33,11 +36,14 @@ public class VideoPlayerController {
 
     public VideoPlayerController(
             boolean audioEnabled,
+            // line added
+            List<FrameProcessor> processors,
             BiConsumer<Integer, Integer> videoSizeChangedHandler) {
         this.view = new VideoPlayerView();
         this.videoSizeChangedHandler = videoSizeChangedHandler;
         model = new VideoPlayerModel(
                 audioEnabled,
+                processors, // line added
                 this::onVideoSizeChanged,
                 this::onFrameReady,
                 this::onStatusChanged,
