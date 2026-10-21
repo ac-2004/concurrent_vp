@@ -336,7 +336,13 @@ public class VideoPlayerModel {
             int frameNumber = grabber.getFrameNumber();
             InfoFrame info = new InfoFrame(frameNumber, timestampUs);
             
-            Image image = prepareFrameImage(frame, info);
+            // create independent copy of decoded frame
+            // original remains owned by decoder
+            Frame ownedFrame = frame.clone();
+            
+            // process independent frame rather than decoder's frame
+            Image image = prepareFrameImage(ownedFrame, info);
+            
             long relativeTimestampUs = Math.max(0, timestampUs - firstTimestampUs);
             long logicalTimestampUs = logicalPlaybackBaseUs + relativeTimestampUs;
             long targetTimeNs = playbackStartNs + relativeTimestampUs * 1_000L;
