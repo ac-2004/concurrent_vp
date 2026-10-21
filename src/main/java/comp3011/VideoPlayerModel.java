@@ -335,9 +335,8 @@ public class VideoPlayerModel {
 
             int frameNumber = grabber.getFrameNumber();
             InfoFrame info = new InfoFrame(frameNumber, timestampUs);
-            processFrame(frame, info);
-
-            Image image = converter.convert(frame);
+            
+            Image image = prepareFrameImage(frame, info);
             long relativeTimestampUs = Math.max(0, timestampUs - firstTimestampUs);
             long logicalTimestampUs = logicalPlaybackBaseUs + relativeTimestampUs;
             long targetTimeNs = playbackStartNs + relativeTimestampUs * 1_000L;
@@ -543,6 +542,16 @@ public class VideoPlayerModel {
         }
 
         return Math.max(0, durationUs - frameDurationUs);
+    }
+    
+    // adding helper function to apply all effects and converts resulting frame into JavaFX img
+    private Image prepareFrameImage(Frame frame, InfoFrame info)
+    		throws Exception {
+    	// apply requested effects in order
+    	processFrame(frame, info);
+    	
+    	// convert processed frame into img for JavaFX
+    	return converter.convert(frame);
     }
 
     private void processFrame(Frame frame, InfoFrame info) throws Exception {

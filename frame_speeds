@@ -1,0 +1,63 @@
+Interpreting output frame ready timings
+Using the same video, different timings were recorded with different effects being added on the video
+
+Original: 
+Frame headroom is -38667us out of 40000us spare.
+Frame headroom is 13627us out of 40000us spare.
+Frame headroom is 16124us out of 40000us spare.
+Frame headroom is 15812us out of 40000us spare.
+Frame headroom is 15295us out of 40000us spare.
+Frame headroom is 15200us out of 40000us spare.
+Frame headroom is 15194us out of 40000us spare.
+Frame headroom is 15382us out of 40000us spare.
+Frame headroom is 15100us out of 40000us spare.
+Frame headroom is 15163us out of 40000us spare.
+
+3 effects: -nsf
+Frame headroom is -59151us out of 40000us spare.
+Frame headroom is 9304us out of 40000us spare.
+Frame headroom is 16520us out of 40000us spare.
+Frame headroom is 16109us out of 40000us spare.
+Frame headroom is 16227us out of 40000us spare.
+Frame headroom is 10758us out of 40000us spare.
+Frame headroom is 11675us out of 40000us spare.
+Frame headroom is 11498us out of 40000us spare.
+Frame headroom is 11751us out of 40000us spare.
+Frame headroom is 10627us out of 40000us spare.
+Frame headroom is 12615us out of 40000us spare.
+Frame headroom is 11963us out of 40000us spare.
+On average, bit slower
+
+6 effects: -nsfjdd
+Frame headroom is -58150us out of 40000us spare.
+Frame headroom is 12929us out of 40000us spare.
+Frame headroom is 16204us out of 40000us spare.
+Frame headroom is 10366us out of 40000us spare.
+Frame headroom is 11508us out of 40000us spare.
+Frame headroom is 11346us out of 40000us spare.
+Frame headroom is 12979us out of 40000us spare.
+Frame headroom is 16491us out of 40000us spare.
+Frame headroom is 15954us out of 40000us spare.
+Frame headroom is 15469us out of 40000us spare.
+Frame headroom is 16708us out of 40000us spare.
+Frame headroom is 15261us out of 40000us spare.
+Frame headroom is 14326us out of 40000us spare.
+Frame headroom is 16271us out of 40000us spare.
+Frame headroom is 16749us out of 40000us spare.
+Frame headroom is -19613us out of 40000us spare.
+Frame headroom is 9180us out of 40000us spare.
+Speeds seem decent
+
+Lots of effects: -nsfjddmmbb
+Frame headroom is -267946us= out of 40000us spare.
+Frame headroom is -3307028us out of 40000us spare.
+Frame headroom is -5969460us out of 40000us spare.
+Frame headroom is -8564254us out of 40000us spare.
+Frame headroom is -11121291us out of 40000us spare.
+Frame headroom is -13624160us out of 40000us spare.
+Frame headroom is -16179463us out of 40000us spare.
+Frame headroom is -18646504us out of 40000us spare.
+Frame headroom is -20975187us out of 40000us spare.
+Frame headroom is -23361302us out of 40000us spare.
+evidently much slower
+
