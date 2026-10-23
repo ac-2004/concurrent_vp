@@ -42,9 +42,22 @@ public class FrameDuster extends FrameProcessor {
     private final int instanceIndex;
     private int mediaSeed;
 
+    // creates dust processor using original automatic instance-index assignment.
     public FrameDuster() {
+        this(nextInstanceIndex++);
+    }
+    
+    // create dust processor with an explicitly assigned identity
+    public FrameDuster(int instanceIndex) {
         super();
-        instanceIndex = nextInstanceIndex++;
+
+        if (instanceIndex < 0) {
+            throw new IllegalArgumentException(
+                "Instance index cannot be negative"
+            );
+        }
+
+        this.instanceIndex = instanceIndex;
     }
 
     @Override

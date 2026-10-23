@@ -215,7 +215,7 @@ public class CommandLineController {
         
         // explaining combinations of the effects as well
         System.out.println();
-        System.out.println("Frame processors are applied in the command line order and can be repeated.");
+        System.out.println("Frame processors are applied in command-line order and may be repeated.");
         System.out.println("Example: -nssnfwyvdjmbp numbers, scratches twice, numbers again, flickers,\n"
         		+ "converts, warms, vignettes, dusts, jitters, mottles, bleeds, then peppers.");
     }

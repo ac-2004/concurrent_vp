@@ -34,8 +34,17 @@ public class FrameFlickerer extends FrameProcessor {
     private int mediaSeed;
 
     public FrameFlickerer() {
+        this(nextInstanceIndex++);
+    }
+    
+    public FrameFlickerer(int instanceIndex) {
         super();
-        instanceIndex = nextInstanceIndex++;
+
+        if (instanceIndex < 0) {
+            throw new IllegalArgumentException("Instance index cannot be negative");
+        }
+
+        this.instanceIndex = instanceIndex;
     }
 
     @Override

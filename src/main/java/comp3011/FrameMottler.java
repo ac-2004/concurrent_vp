@@ -73,8 +73,17 @@ public class FrameMottler extends FrameProcessor {
     private int blockRedScaleIndex;
 
     public FrameMottler() {
+        this(nextInstanceIndex++);
+    }
+    
+    public FrameMottler(int instanceIndex) {
         super();
-        instanceIndex = nextInstanceIndex++;
+
+        if (instanceIndex < 0) {
+            throw new IllegalArgumentException("Instance index cannot be negative");
+        }
+
+        this.instanceIndex = instanceIndex;
     }
 
     @Override

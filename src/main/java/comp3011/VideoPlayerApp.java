@@ -12,6 +12,7 @@ package comp3011;
 
 import java.util.List;
 
+
 import javafx.application.Application;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
@@ -43,18 +44,20 @@ public class VideoPlayerApp extends Application {
     public void start(Stage stage) {
         this.stage = stage;
         
-        // added: construct new processor for every effect
-        List<FrameProcessor> processors = commandLineController
-        		.getRequestedEffects()
-        		.stream()
-        		.map(FrameProcessorFactory::create)
-        		.toList();
+        // preserve the original command-line effect configuration.
+        List<String> effectCodes =
+                commandLineController.getRequestedEffects();
+
+        // construct the processors used by the existing playback implementation.
+        List<FrameProcessor> processors =
+                FrameProcessorFactory.createPipeline(effectCodes);
 
         controller = new VideoPlayerController(
                 commandLineController.isAudioRequested(),
                 processors, //line added
+                effectCodes,
                 this::setVideoSize);
-
+        
         Scene scene = new Scene(controller.getView().getRoot());
         controller.installKeyboardShortcuts(scene);
 

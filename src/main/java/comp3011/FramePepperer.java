@@ -47,8 +47,17 @@ public class FramePepperer extends FrameProcessor {
     private int mediaSeed;
 
     public FramePepperer() {
+        this(nextInstanceIndex++);
+    }
+    
+    public FramePepperer(int instanceIndex) {
         super();
-        instanceIndex = nextInstanceIndex++;
+
+        if (instanceIndex < 0) {
+            throw new IllegalArgumentException("Instance index cannot be negative");
+        }
+
+        this.instanceIndex = instanceIndex;
     }
 
     @Override

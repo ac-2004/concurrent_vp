@@ -40,8 +40,17 @@ public class FrameScratcher extends FrameProcessor {
     private int mediaSeed;
 
     public FrameScratcher() {
+        this(nextInstanceIndex++);
+    }
+    
+    public FrameScratcher(int instanceIndex) {
         super();
-        instanceIndex = nextInstanceIndex++;
+
+        if (instanceIndex < 0) {
+            throw new IllegalArgumentException("Instance index cannot be negative");
+        }
+
+        this.instanceIndex = instanceIndex;
     }
 
     @Override

@@ -9,7 +9,10 @@ public record VideoFrameJob(
 	long sequenceNumber,
 	long generation,
 	Frame frame,
-	InfoFrame info
+	InfoFrame info,
+	long mediaTimestampUs,
+	long logicalTimestampUs,
+	long targetTimeNs
 ) {
 	// validates required job data
 	public VideoFrameJob {

@@ -88,10 +88,21 @@ public class VideoPlayerModel {
     private long playbackStartNs;
     private long pauseStartedNs;
     private long relativeSeekBaseUs = NO_SEEK_REQUEST;
+    
+    // added
+    // identify current playback session
+    private long playbackGeneration = 0;
+    // assign monotonically increasing sequence numbers
+    private long nextFrameSequence = 0;
+    // distinguish decoder completion from playback completion
+    private boolean decodingFinished = false;
+    
+    private final List<String> effectCodes;
 
     public VideoPlayerModel(
             boolean audioEnabled,
             List<FrameProcessor> processors, // line added
+            List<String> effectCodes,
             BiConsumer<Integer, Integer> videoSizeChangedHandler,
             Consumer<Image> frameReadyHandler,
             Consumer<String> statusChangedHandler,
@@ -105,6 +116,7 @@ public class VideoPlayerModel {
         this.audioOutputStateChangedHandler = audioOutputStateChangedHandler;
         // line added
         this.frameProcessors = List.copyOf(processors);
+        this.effectCodes = List.copyOf(effectCodes);
 
     }
 
@@ -263,7 +275,13 @@ public class VideoPlayerModel {
     }
 
     private void resetPlaybackClock(long logicalTimestampUs) {
-        pendingAudio.clear();
+        // invalidate frames belonging to previous playback position
+    	playbackGeneration++;
+    	// begin new ordered frame sequence
+        nextFrameSequence = 0;
+        // decoder not yet reached end of this playback
+        decodingFinished = false;
+    	pendingAudio.clear();
         preparedFrame = null;
         currentTimestampUs = logicalTimestampUs;
         relativeSeekBaseUs = logicalTimestampUs;
@@ -290,6 +308,46 @@ public class VideoPlayerModel {
         } catch (Exception e) {
             handlePlaybackError(e);
         }
+    }
+    
+    // create an indeoendently owned processing job for decoded video frame. 
+    private VideoFrameJob createVideoFrameJob(
+    		Frame frame,
+    		long timestampUs,
+    		int frameNumber) {
+    	
+    	if (firstTimestampUs == NO_SEEK_REQUEST) {
+    		firstTimestampUs = timestampUs;
+    		playbackStartNs = System.nanoTime();
+    		
+    		if (pauseRequested) {
+    			pauseStartedNs = playbackStartNs;
+    		}
+    	}
+    	
+    	long relativeTimestampUs =
+                Math.max(0, timestampUs - firstTimestampUs);
+
+        long logicalTimestampUs =
+                logicalPlaybackBaseUs + relativeTimestampUs;
+
+        long targetTimeNs =
+                playbackStartNs + relativeTimestampUs * 1_000L;
+
+        InfoFrame info = new InfoFrame(frameNumber, timestampUs);
+        
+        // job receives its own image-buffer copy
+        Frame ownedFrame = frame.clone();
+        
+        return new VideoFrameJob(
+                nextFrameSequence++,
+                playbackGeneration,
+                ownedFrame,
+                info,
+                timestampUs,
+                logicalTimestampUs,
+                targetTimeNs
+        );
     }
 
     private PreparedFrame readNextVideoFrame() throws Exception {
@@ -325,35 +383,24 @@ public class VideoPlayerModel {
                 frameProcessorsInitialised = true;
             }
 
-            if (firstTimestampUs == NO_SEEK_REQUEST) {
-                firstTimestampUs = timestampUs;
-                playbackStartNs = System.nanoTime();
-                if (pauseRequested) {
-                    pauseStartedNs = playbackStartNs;
-                }
-            }
-
             int frameNumber = grabber.getFrameNumber();
-            InfoFrame info = new InfoFrame(frameNumber, timestampUs);
             
-            // create independent copy of decoded frame
-            // original remains owned by decoder
-            Frame ownedFrame = frame.clone();
+            VideoFrameJob job = createVideoFrameJob(
+            		frame,
+            		timestampUs,
+            		frameNumber
+            		);
             
-            // process independent frame rather than decoder's frame
-            Image image = prepareFrameImage(ownedFrame, info);
-            
-            long relativeTimestampUs = Math.max(0, timestampUs - firstTimestampUs);
-            long logicalTimestampUs = logicalPlaybackBaseUs + relativeTimestampUs;
-            long targetTimeNs = playbackStartNs + relativeTimestampUs * 1_000L;
+            Image image = prepareFrameImage(job.frame(), job.info());
 
             return new PreparedFrame(
                     image,
                     frameNumber,
-                    timestampUs,
-                    logicalTimestampUs,
-                    targetTimeNs,
-                    System.nanoTime());
+                    job.mediaTimestampUs(),
+                    job.logicalTimestampUs(),
+                    job.targetTimeNs(),
+                    System.nanoTime()
+            );
         }
 
         return null;

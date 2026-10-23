@@ -37,8 +37,17 @@ public class FrameJitterer extends FrameProcessor {
     private byte[] blackRow;
 
     public FrameJitterer() {
+        this(nextInstanceIndex++);
+    }
+    
+    public FrameJitterer(int instanceIndex) {
         super();
-        instanceIndex = nextInstanceIndex++;
+
+        if (instanceIndex < 0) {
+            throw new IllegalArgumentException("Instance index cannot be negative");
+        }
+
+        this.instanceIndex = instanceIndex;
     }
 
     @Override
