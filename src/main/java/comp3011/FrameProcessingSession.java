@@ -16,7 +16,8 @@ public final class FrameProcessingSession implements AutoCloseable {
 
     private final ThreadLocal<FrameProcessingWorker> localWorker;
 
-    private volatile boolean closed;
+    private boolean accepting = true;
+    private boolean disposed = false;
 
     public FrameProcessingSession(
             List<String> effectCodes,
@@ -55,36 +56,80 @@ public final class FrameProcessingSession implements AutoCloseable {
 
         Objects.requireNonNull(job, "job");
 
-        if (closed) {
+        if (!accepting) {
             throw new IllegalStateException(
-                    "Processing session is closed"
+                "Processing session no longer accepts submissions"
             );
         }
 
         return queue.submit(() -> {
-            return localWorker.get().process(job);
+        	try {
+                return localWorker.get().process(job);
+            } catch (Exception | Error failure) {
+                job.frame().close();
+                throw failure;
+            }
         });
     }
 
     // retrieve only next completed frame in order
     public Optional<ProcessedVideoFrame> pollReady() {
 
-        if (closed) {
-            return Optional.empty();
-        }
+    	if (disposed) {
+    	    return Optional.empty();
+    	}
 
         return queue.pollReady();
+    }
+    
+    // returns the number of processing results still awaiting retrieval.
+    public int pendingCount() {
+        return queue.pendingCount();
+    }
+    
+    // returns true when no submitted results remain to be retrieved.
+    public boolean isEmpty() {
+        return queue.isEmpty();
+    }
+    
+    // prevents additional submissions while allowing existing jobs to finish.
+    public void finishSubmitting() {
+        if (!accepting) {
+            return;
+        }
+
+        accepting = false;
+        queue.finishSubmitting();
+    }
+
+    // returns true once every processing task has terminated.
+    public boolean isTerminated() {
+        return queue.isTerminated();
+    }
+    
+    // returns true when session stopped accepting jobs
+    public boolean isDrained() {
+        return !accepting && queue.isEmpty() && queue.isTerminated();
+    }
+    
+    // dispose worker pipelines after all processing terminated
+    public void disposeIfDrained() {
+
+        if (disposed || !isDrained()) {
+            return;
+        }
+
+        for (FrameProcessingWorker worker : workers) {
+            worker.close();
+        }
+
+        disposed = true;
     }
 
     // invalidates outstanding jobs and requests executor shutdown
     @Override
     public void close() {
 
-        if (closed) {
-            return;
-        }
-
-        closed = true;
-        queue.close();
+        finishSubmitting();
     }
 }

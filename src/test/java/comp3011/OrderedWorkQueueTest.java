@@ -2,6 +2,8 @@ package comp3011;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.List;
+import java.util.ArrayList;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -104,5 +106,71 @@ class OrderedWorkQueueTest {
 	    assertDoesNotThrow(queue::close);
 	}
 
+	// Verifies that the pending count includes submitted jobs awaiting retrieval.
+	@Test
+	void pendingCountTracksSubmittedJobs() throws Exception {
 
+	    try (OrderedWorkQueue<Integer> queue =
+	            new OrderedWorkQueue<>(2, 4)) {
+
+	        assertEquals(0, queue.pendingCount());
+
+	        assertTrue(queue.submit(() -> 10));
+	        assertTrue(queue.submit(() -> 20));
+
+	        assertEquals(2, queue.pendingCount());
+	        assertFalse(queue.isEmpty());
+	    }
+	}
+	
+	// Verifies that a newly created work queue contains no pending jobs.
+	@Test
+	void newQueueIsEmpty() {
+
+	    try (OrderedWorkQueue<Integer> queue =
+	            new OrderedWorkQueue<>(2, 4)) {
+
+	        assertTrue(queue.isEmpty());
+	        assertEquals(0, queue.pendingCount());
+	    }
+	}
+	
+
+	// Verifies that graceful shutdown preserves previously submitted results.
+	@Test
+	void gracefulShutdownAllowsPendingResultsToFinish() throws Exception {
+
+	    try (OrderedWorkQueue<Integer> queue =
+	            new OrderedWorkQueue<>(2, 4)) {
+
+	        assertTrue(queue.submit(() -> 10));
+	        assertTrue(queue.submit(() -> 20));
+
+	        queue.finishSubmitting();
+
+	        assertThrows(
+	                IllegalStateException.class,
+	                () -> queue.submit(() -> 30)
+	        );
+
+	        List<Integer> results = new ArrayList<>();
+
+	        long deadline = System.nanoTime()
+	                + java.util.concurrent.TimeUnit.SECONDS.toNanos(5);
+
+	        while (results.size() < 2 && System.nanoTime() < deadline) {
+
+	            queue.pollReady().ifPresent(results::add);
+
+	            if (results.size() < 2) {
+	                Thread.sleep(1);
+	            }
+	        }
+
+	        assertEquals(List.of(10, 20), results);
+	        assertTrue(queue.isEmpty());
+	    }
+	}
+
+	
 }

@@ -45,16 +45,16 @@ public class FrameProcessorFactory {
 		
 		return switch (code) {
 			case "n" -> new FrameNumberer();
-			case "s" -> new FrameScratcher();
-            case "f" -> new FrameFlickerer();
             case "w" -> new FrameBlackAndWhiter();
             case "y" -> new FrameYellower();
             case "v" -> new FrameVignetter();
-            case "d" -> new FrameDuster();
-            case "j" -> new FrameJitterer();
-            case "m" -> new FrameMottler();
             case "b" -> new FrameBleeder();
-            case "p" -> new FramePepperer();
+            case "s" -> new FrameScratcher(occurrenceIndex);
+            case "f" -> new FrameFlickerer(occurrenceIndex);
+            case "d" -> new FrameDuster(occurrenceIndex);
+            case "j" -> new FrameJitterer(occurrenceIndex);
+            case "m" -> new FrameMottler(occurrenceIndex);
+            case "p" -> new FramePepperer(occurrenceIndex);
             
             default -> throw new IllegalArgumentException(
         		"unknown frame processor: " + code

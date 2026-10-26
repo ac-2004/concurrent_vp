@@ -107,6 +107,16 @@ public final class OrderedWorkQueue<T> implements AutoCloseable {
 		}
 	}
 	
+	// return number of submitted jobs not yet retrieved
+	public int pendingCount() {
+	    return pending.size();
+	}
+	
+	// every submitted result retrieved
+	public boolean isEmpty() {
+	    return pending.isEmpty();
+	}
+	
 	// cancel work from previous position that may be obsolete
 	public void cancelPending() {
 
@@ -120,6 +130,22 @@ public final class OrderedWorkQueue<T> implements AutoCloseable {
 	        // return the permit associated with this queued job.
 	        capacity.release();
 	    }
+	}
+	
+	// stops accepting new work while allowing submitted jobs to finish.
+	public void finishSubmitting() {
+
+	    if (closed) {
+	        return;
+	    }
+
+	    closed = true;
+	    executor.shutdown();
+	}
+	
+	// returns true when all executor tasks have actually terminated.
+	public boolean isTerminated() {
+	    return executor.isTerminated();
 	}
 	
 	// stop accepting new work, cancels outstanding tasks and requests

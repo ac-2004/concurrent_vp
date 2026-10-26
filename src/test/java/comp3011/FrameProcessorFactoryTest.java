@@ -91,4 +91,28 @@ public class FrameProcessorFactoryTest {
 	        () -> FrameProcessorFactory.create("d", -1)
 	    );
 	}
+	
+
+	// verifies that explicit effect identities are preserved across pipelines.
+	@Test
+	void concurrentPipelinesUseConsistentEffectIdentities() {
+
+	    List<FrameProcessor> first =
+	            FrameProcessorFactory.createPipeline(
+	                    List.of("s", "s", "f", "d", "m", "p", "j")
+	            );
+
+	    List<FrameProcessor> second =
+	            FrameProcessorFactory.createPipeline(
+	                    List.of("s", "s", "f", "d", "m", "p", "j")
+	            );
+
+	    assertEquals(first.size(), second.size());
+
+	    for (int i = 0; i < first.size(); i++) {
+	        assertEquals(first.get(i).getClass(), second.get(i).getClass());
+	        assertNotSame(first.get(i), second.get(i));
+	    }
+	}
+
 }
