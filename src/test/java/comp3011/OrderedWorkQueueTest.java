@@ -10,6 +10,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.concurrent.CompletionException;
+
 class OrderedWorkQueueTest {
 
 	// jobs should return in submission order
@@ -171,6 +173,61 @@ class OrderedWorkQueueTest {
 	        assertTrue(queue.isEmpty());
 	    }
 	}
+	
+
+    // verifies that a failed task does not prevent later result retrieval.
+    @Test
+    void failedTaskDoesNotBlockFollowingResults() throws Exception {
+
+        try (OrderedWorkQueue<Integer> queue =
+                     new OrderedWorkQueue<>(2, 2)) {
+
+            assertTrue(queue.submit(() -> {
+                throw new IllegalStateException("Processing failed");
+            }));
+
+            assertTrue(queue.submit(() -> 42));
+
+            long deadline = System.nanoTime()
+                    + TimeUnit.SECONDS.toNanos(5);
+
+            boolean failureObserved = false;
+
+            while (!failureObserved && System.nanoTime() < deadline) {
+                try {
+                    queue.pollReady();
+                } catch (CompletionException failure) {
+                    assertInstanceOf(
+                            IllegalStateException.class,
+                            failure.getCause()
+                    );
+                    failureObserved = true;
+                }
+
+                if (!failureObserved) {
+                    Thread.sleep(1);
+                }
+            }
+
+            assertTrue(failureObserved);
+
+            Optional<Integer> next = Optional.empty();
+
+            while (next.isEmpty() && System.nanoTime() < deadline) {
+                next = queue.pollReady();
+
+                if (next.isEmpty()) {
+                    Thread.sleep(1);
+                }
+            }
+
+            assertEquals(Optional.of(42), next);
+            assertTrue(queue.isEmpty());
+
+            queue.finishSubmitting();
+        }
+    }
+
 
 	
 }

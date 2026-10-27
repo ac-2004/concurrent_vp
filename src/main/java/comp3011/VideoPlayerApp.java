@@ -4,7 +4,7 @@
  * 
  * Authors:
  *   1. Simon Ratcliffe, in collaboration with GPT-5.6 Terra
- *   2. <student name and student number insert here upon modification>
+ *   2. Ayush Chauhan, a1870640
  *
  * Copyright 2026 Simon Ratcliffe
  */
@@ -44,17 +44,12 @@ public class VideoPlayerApp extends Application {
     public void start(Stage stage) {
         this.stage = stage;
         
-        // preserve the original command-line effect configuration.
+        // Pass the requested effects to the concurrent processing pipeline.
         List<String> effectCodes =
                 commandLineController.getRequestedEffects();
 
-        // construct the processors used by the existing playback implementation.
-        List<FrameProcessor> processors =
-                FrameProcessorFactory.createPipeline(effectCodes);
-
         controller = new VideoPlayerController(
                 commandLineController.isAudioRequested(),
-                processors, //line added
                 effectCodes,
                 this::setVideoSize);
         

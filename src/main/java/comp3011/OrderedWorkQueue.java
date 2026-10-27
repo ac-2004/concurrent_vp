@@ -1,3 +1,13 @@
+/*
+ * COMP3011 Assignment 2 - Concurrent Video Player
+ *
+ * Author: Ayush Chauhan
+ * Student ID: a1870640
+ *
+ * Bounded ordered work queue implemented for concurrent
+ * video frame processing.
+ */
+
 package comp3011;
 
 import java.util.ArrayDeque;
@@ -75,7 +85,7 @@ public final class OrderedWorkQueue<T> implements AutoCloseable {
 	    }
 	}
 	
-	// retrieve oldest submitted result, provided its doen
+	// retrieve oldest submitted result, provided it is completed
 	// results returned in submission order, regardless of order in which they are finished
 	public Optional<T> pollReady() {
 		// look at oldest outstanding job without removing it

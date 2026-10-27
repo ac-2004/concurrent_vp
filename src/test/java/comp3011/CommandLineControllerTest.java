@@ -158,6 +158,46 @@ public class CommandLineControllerTest {
 	    );
 		
 		assertNull(controller.getErrorMessage());
+		assertTrue(controller.isAudioRequested());
+		assertTrue(controller.isMaximiseRequested());
 	}
+	
+
+    // checks that a video filename is required unless help is requested.
+    @Test
+    void missingVideoFile() {
+        CommandLineController controller =
+                new CommandLineController(new String[] {"-sf"});
+
+        assertEquals("No video file specified.", controller.getErrorMessage());
+        assertEquals(1, controller.getExitCode());
+        assertFalse(controller.shouldLaunchApplication());
+    }
+
+    // checks that conflicting monitor selections are rejected.
+    @Test
+    void conflictingDisplayOptions() {
+        CommandLineController controller =
+                new CommandLineController(new String[] {"-1", "-2", "--help"});
+
+        assertEquals(
+                "Only one display option can be used",
+                controller.getErrorMessage()
+        );
+        assertEquals(1, controller.getExitCode());
+        assertFalse(controller.shouldLaunchApplication());
+    }
+
+    // checks that help can be requested without a video filename.
+    @Test
+    void helpWithoutVideoFile() {
+        CommandLineController controller =
+                new CommandLineController(new String[] {"--help"});
+
+        assertNull(controller.getErrorMessage());
+        assertEquals(0, controller.getExitCode());
+        assertFalse(controller.shouldLaunchApplication());
+    }
+
 }
 

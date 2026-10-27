@@ -4,7 +4,7 @@
 
   Authors:
     1. Simon Ratcliffe, in collaboration with GPT-5.6 Terra
-    2. <student name and student number insert here upon modification>
+    2. Ayush Chauhan, a1870640
 
   Copyright 2026 Simon Ratcliffe
 -->
@@ -63,6 +63,20 @@
 	      <artifactId>maven-surefire-plugin</artifactId>
 	      <version>3.5.2</version>
 	  </plugin>
+	  <!-- runs performance integration tests during maven verify -->
+	  <plugin>
+		    <groupId>org.apache.maven.plugins</groupId>
+		    <artifactId>maven-failsafe-plugin</artifactId>
+		    <version>3.5.2</version>
+		    <executions>
+		        <execution>
+		            <goals>
+		                <goal>integration-test</goal>
+		                <goal>verify</goal>
+		            </goals>
+		        </execution>
+		    </executions>
+		</plugin>
     </plugins>
   </build>
 

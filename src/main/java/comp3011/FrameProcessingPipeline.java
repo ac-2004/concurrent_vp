@@ -50,7 +50,7 @@ public final class FrameProcessingPipeline implements AutoCloseable {
         initialised = true;
     }
     
-    // applies the configured effects to an exclusively owned frame and converts result into a displayable JavaFX img.
+    // applies effects sequentially to the worker-owned JavaCV frame.
     public Frame process(Frame frame, InfoFrame info) throws Exception {
 
         if (closed) {

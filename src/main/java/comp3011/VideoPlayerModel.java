@@ -4,7 +4,7 @@
  * 
  * Authors:
  *   1. Simon Ratcliffe, in collaboration with GPT-5.6 Terra
- *   2. <student name and student number insert here upon modification>
+ *   2. Ayush Chauhan, a1870640
  *
  * Copyright 2026 Simon Ratcliffe
  */
@@ -26,27 +26,56 @@ import org.bytedeco.javacv.JavaFXFrameConverter;
 import javafx.animation.AnimationTimer;
 import javafx.scene.image.Image;
 
+
 /**
- * The model part of the video player model-view-controller architecture.
+ * Coordinates video playback within the model-view-controller architecture.
  *
  * <p>
- * Owns the FFmpeg decoder, playback clock, seeking logic, audio scheduling,
- * and frame processing - which it all manages through cooperative multi-tasking
- * on a single thread. It publishes decoded frames and playback state through
- * callbacks supplied by its owning {@link VideoPlayerController}, keeping it
- * decoupled from the JavaFX view.
+ * Owns FFmpeg decoding, playback timing, audio scheduling, seeking and
+ * presentation coordination. Computationally expensive frame effects
+ * are delegated to independent background processing workers.
+ * </p>
+ *
+ * <p>
+ * The JavaFX Application Thread controls playback state and collects
+ * processed results in submission order. Workers operate on cloned
+ * frames and independently initialised effect pipelines, avoiding
+ * concurrent access to the decoder and shared mutable processors.
+ * </p>
+ *
+ * <p>
+ * Seeking and stopping retire outstanding processing sessions.
+ * Results belonging to obsolete sessions are discarded rather
+ * than presented.
  * </p>
  */
+
 public class VideoPlayerModel {
     private static final long NO_SEEK_REQUEST = -1; // Sentinel value used when no seek position is active.
     private static final long FIVE_SECONDS_US = 5_000_000L;
     private static final long AUDIO_LEAD_NS = 30_000_000L;
     
-    // iniital concurrency settings
-    private static final int PROCESSING_WORKERS = 4;
-    private static final int MAX_PENDING_VIDEO_FRAMES = 6;
+    /**
+     * Concurrency model:
+     * - FFmpeg decoding and JavaFX presentation are owned by the FX thread.
+     * - Processing workers operate on independent cloned frames.
+     * - Each worker owns an independent FrameProcessingPipeline.
+     * - Completed frames are collected in submission order.
+     * - The number of outstanding jobs is bounded to limit memory use.
+     * - Seeking retires the old session and invalidates stale results.
+     *
+     * These ownership rules prevent concurrent access to the FFmpeg
+     * grabber and prevent stale processing results from being displayed.
+     */
+    
+    // processing capacity is bounded to limit CPU contention and frame memory.
+    private static final int PROCESSING_WORKERS = 6;
+    private static final int MAX_PENDING_VIDEO_FRAMES = 10;
     
     private static final int DECODE_PER_PUMP = 2;
+    
+    // limits decoding attempts during one submission call.
+    private static final int MAX_GRABS_PER_SUBMISSION = 8;
 
     private final List<FrameProcessingSession> retiringSessions =
             new ArrayList<>();
@@ -77,7 +106,8 @@ public class VideoPlayerModel {
     private FFmpegFrameGrabber grabber; // This is the 3rd party video media decoder. It deals in JavaCV Frame objects.
     private JavaFXFrameConverter converter; // Takes Frame objects to JavaFX Image objects, which can be put on screen.
     private AudioPlayer audioPlayer; // This is ours. It has some real time buffering smarts.
-    private PreparedFrame preparedFrame; // Ours, but is just an Image with some meta-data added. private boolean prepareNextFrameQueued; True only when the event loop needs to call our prepareNextFrame method.
+    // Frame currently selected for presentation on the JavaFX thread.
+    private PreparedFrame preparedFrame;
     private final Queue<PreparedFrame> readyFrames =
             new ArrayDeque<>();
     private boolean playbackOpen; // True when playback is happening.
@@ -109,11 +139,13 @@ public class VideoPlayerModel {
     // distinguish decoder completion from playback completion
     private boolean decodingFinished = false;
     
+    // prevents shutdown cleanup from being started more than once.
+    private boolean shutdownRequested = false;
+    
     private final List<String> effectCodes;
 
     public VideoPlayerModel(
             boolean audioEnabled,
-            List<FrameProcessor> processors, // line added
             List<String> effectCodes,
             BiConsumer<Integer, Integer> videoSizeChangedHandler,
             Consumer<Image> frameReadyHandler,
@@ -126,7 +158,6 @@ public class VideoPlayerModel {
         this.statusChangedHandler = statusChangedHandler;
         this.playbackStateChangedHandler = playbackStateChangedHandler;
         this.audioOutputStateChangedHandler = audioOutputStateChangedHandler;
-        // line added
         this.effectCodes = List.copyOf(effectCodes);
 
     }
@@ -196,68 +227,58 @@ public class VideoPlayerModel {
     }
 
 
-	public void shutdown() {
-	    closePlaybackResources();
-	
-	    // stop JavaFX-based cleanup as the application is exiting.
-	    playbackTimer.stop();
-	
-	    // transfer retired sessions to a dedicated cleanup thread.
-	    List<FrameProcessingSession> sessions =
-	            new ArrayList<>(retiringSessions);
-	
-	    retiringSessions.clear();
-	
-	    if (!sessions.isEmpty()) {
-	        Thread cleanupThread = new Thread(
-	                () -> drainShutdownSessions(sessions),
-	                "video-processing-shutdown"
-	        );
-	
-	        cleanupThread.start();
-	    }
-	}
-	
+    public void shutdown() {
+    	if (shutdownRequested) {
+            return;
+        }
 
-	// drains outstanding worker results after playback stopped.
-	// runs on a dedicated thread so app shutdown doesn't block UI
-	private void drainShutdownSessions(
-	        List<FrameProcessingSession> sessions) {
-	
-	    for (FrameProcessingSession session : sessions) {
-	
-	        session.finishSubmitting();
-	
-	        while (!session.isDrained()) {
-	
-	            while (!session.isEmpty()) {
-	                try {
-	                    var result = session.pollReady();
-	
-	                    if (result.isEmpty()) {
-	                        break;
-	                    }
-	
-	                    result.get().frame().close();
-	
-	                } catch (java.util.concurrent.CompletionException
-	                        | java.util.concurrent.CancellationException failure) {
-	                    failure.printStackTrace();
-	                }
-	            }
-	
-	            if (!session.isDrained()) {
-	                java.util.concurrent.locks.LockSupport.parkNanos(
-	                        5_000_000L
-	                );
-	            }
-	        }
-	
-	        session.disposeIfDrained();
-	    }
-	}
+        shutdownRequested = true;
+        
+        closePlaybackResources();
+        playbackTimer.stop();
 
+        List<FrameProcessingSession> sessions =
+                new ArrayList<>(retiringSessions);
+        retiringSessions.clear();
 
+        if (!sessions.isEmpty()) {
+            Thread cleanupThread = new Thread(
+                    () -> {
+                        for (FrameProcessingSession session : sessions) {
+                            drainSessionOnShutdown(session);
+                        }
+                    },
+                    "video-processing-cleanup"
+            );
+
+            cleanupThread.start();
+        }
+    }
+    
+    // drains completed frames and releases workers when the application exits.
+    private void drainSessionOnShutdown(FrameProcessingSession session) {
+        session.finishSubmitting();
+
+        while (!session.isDrained()) {
+            try {
+                var result = session.pollReady();
+
+                if (result.isPresent()) {
+                    result.get().frame().close();
+                } else {
+                    java.util.concurrent.locks.LockSupport.parkNanos(
+                            5_000_000L
+                    );
+                }
+
+            } catch (java.util.concurrent.CompletionException
+                    | java.util.concurrent.CancellationException failure) {
+                // continue draining remaining results.
+            }
+        }
+
+        session.disposeIfDrained();
+    }
 
     private void seekRelative(long offsetUs) {
         if (videoFile == null) {
@@ -444,14 +465,6 @@ public class VideoPlayerModel {
 	                System.nanoTime()
 	        ));
 	
-	        /* for debugging
-	        if (result.info().frameNumber() % 25 == 0) {
-	            System.out.println(
-	                "COLLECTED frame " + result.info().frameNumber()
-	            );
-	        }
-	        */
-	
 	    } finally {
 	        result.frame().close();
 	    }
@@ -530,7 +543,9 @@ public class VideoPlayerModel {
     	    return false;
     	}
     	
-    	while (playbackOpen) {
+    	for (int grabs = 0;
+    	        playbackOpen && grabs < MAX_GRABS_PER_SUBMISSION;
+    	        grabs++) {
             Frame frame = grabFrame();
             if (frame == null) {
                 decodingFinished = true;
@@ -581,12 +596,6 @@ public class VideoPlayerModel {
                 );
             }
 
-            /* for debugging
-            if (frameNumber % 25 == 0) {
-                System.out.println("SUBMITTED frame " + frameNumber);
-            }
-            */
-            
             return true;
         }
     	return false;
@@ -638,12 +647,16 @@ public class VideoPlayerModel {
         }
     }
 
-    // This is called on a heart beat by the GUI thread. We want to be co-operative here by (a) not blocking, and (b)
-    // getting our required work out of the way quickly so that we can return control flow to the JavaFX event loop for
-    // handling user interaction with the GUI and rendering. We have three jobs: (1) keep audio flowing if sound is on,
-    // (2) display a frame if it is due and (3) prepare the next frame if we're in the window after the previous frame
-    // has gone to the display. We don't buffer frames here, just handling them one at a time. Not a great architecture,
-    // living on the edge a bit, but can't do much better on a single thread.
+    /*
+    Coordinates playback on each JavaFX animation callback.
+    
+    Collects completed processing jobs without blocking, schedules audio,
+    displays at most one due frame and submits additional decoding work.
+    
+    Processing runs on background workers, but decoding and JavaFX
+    conversion remain on this thread. The bounded submission limits
+    help preserve time for GUI events and rendering.
+    */
 
 	private void pumpPlayback(long now) {
 	

@@ -1,3 +1,13 @@
+/*
+ * COMP3011 Assignment 2 - Concurrent Video Player
+ *
+ * Author: Ayush Chauhan
+ * Student ID: a1870640
+ *
+ * Coordinates background frame-processing sessions,
+ * worker ownership and graceful lifecycle management.
+ */
+
 
 package comp3011;
 
@@ -13,7 +23,9 @@ public final class FrameProcessingSession implements AutoCloseable {
 
     private final ConcurrentLinkedQueue<FrameProcessingWorker> workers =
             new ConcurrentLinkedQueue<>();
-
+    
+    // gives each executor thread its own effect pipeline, avoiding
+    // concurrent access to mutable FrameProcessor instances.
     private final ThreadLocal<FrameProcessingWorker> localWorker;
 
     private boolean accepting = true;
@@ -51,7 +63,7 @@ public final class FrameProcessingSession implements AutoCloseable {
         });
     }
 
-    // submits frame foro background processing without blocking caller
+    // submits an independently owned frame without blocking the caller.
     public boolean submit(VideoFrameJob job) {
 
         Objects.requireNonNull(job, "job");

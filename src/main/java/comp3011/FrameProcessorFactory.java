@@ -13,6 +13,19 @@ public class FrameProcessorFactory {
 	private FrameProcessorFactory() {
 	}
 	
+	/**
+	 * Creates a FrameProcessor for a command-line effect code.
+	 *
+	 * To add a new effect:
+	 * 1. Implement the FrameProcessor interface.
+	 * 2. Add its command-line code to the supported effect options.
+	 * 3. Add a case here to construct the processor.
+	 * 4. Update the command-line help and parsing tests.
+	 *
+	 * Effects are created in command-line order. Stateful processors
+	 * must be independently instantiated for each worker pipeline.
+	 */
+	
 	// create frame processor according to supplied identifier
 	public static FrameProcessor create(String code) {
 
