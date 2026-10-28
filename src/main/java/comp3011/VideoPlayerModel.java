@@ -70,9 +70,9 @@ public class VideoPlayerModel {
     
     // processing capacity is bounded to limit CPU contention and frame memory.
     private static final int PROCESSING_WORKERS = 6;
-    private static final int MAX_PENDING_VIDEO_FRAMES = 10;
+    private static final int MAX_PENDING_VIDEO_FRAMES = 8;
     
-    private static final int DECODE_PER_PUMP = 2;
+    private static final int DECODE_PER_PUMP = 3;
     
     // limits decoding attempts during one submission call.
     private static final int MAX_GRABS_PER_SUBMISSION = 8;

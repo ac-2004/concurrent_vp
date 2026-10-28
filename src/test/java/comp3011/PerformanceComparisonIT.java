@@ -12,7 +12,7 @@ import org.bytedeco.javacv.Frame;
 import org.junit.jupiter.api.Test;
 
 /**
- * Compares single-worker and four-worker frame processing.
+ * Compares single-worker and six-worker frame processing.
  *
  * Measures effect processing throughput, excluding video decoding
  * and JavaFX display. Uses an identical synthetic workload.
@@ -30,7 +30,7 @@ public class PerformanceComparisonIT {
 
     // compares processing throughput and verifies ordered frame delivery.
     @Test
-    void compareSingleWorkerWithFourWorkers() throws Exception {
+    void compareSingleWorkerWithSixWorkers() throws Exception {
 
         InfoVideo videoInfo = new InfoVideo(
                 "synthetic-benchmark",
@@ -48,10 +48,10 @@ public class PerformanceComparisonIT {
 
         // warm up processing before measuring performance.
         measure(videoInfo, 1, 12);
-        measure(videoInfo, 4, 12);
+        measure(videoInfo, 6, 12);
 
         long singleNs = measure(videoInfo, 1, FRAME_COUNT);
-        long parallelNs = measure(videoInfo, 4, FRAME_COUNT);
+        long parallelNs = measure(videoInfo, 6, FRAME_COUNT);
 
         double singleFps = FRAME_COUNT * 1e9 / singleNs;
         double parallelFps = FRAME_COUNT * 1e9 / parallelNs;
@@ -65,7 +65,7 @@ public class PerformanceComparisonIT {
         System.out.printf("Effects per frame: %d%n", EFFECTS.size());
 
         System.out.printf("Single-worker FPS: %.2f%n", singleFps);
-        System.out.printf("Four-worker FPS: %.2f%n", parallelFps);
+        System.out.printf("Six-worker FPS: %.2f%n", parallelFps);
         System.out.printf("Relative performance: %.2f%%%n", improvement);
 
         System.out.println("============================================");
@@ -85,7 +85,7 @@ public class PerformanceComparisonIT {
                              EFFECTS,
                              videoInfo,
                              workerCount,
-                             8
+                             10
                      )) {
 
             int submitted = 0;
@@ -105,7 +105,7 @@ public class PerformanceComparisonIT {
 
                 // submit more frames while capacity is available.
                 if (submitted < frameCount
-                        && session.pendingCount() < 8) {
+                        && session.pendingCount() < 10) {
 
                     Frame frame = new Frame(
                             WIDTH,

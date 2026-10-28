@@ -1,3 +1,13 @@
+/*
+ * COMP3011 Assignment 2 - Concurrent Video Player
+ *
+ * Author: Ayush Chauhan
+ * Student ID: a1870640
+ *
+ * Constructs ordered effect pipelines with deterministic
+ * processor identities for independent worker threads.
+ */
+
 package comp3011;
 
 import java.util.ArrayList;

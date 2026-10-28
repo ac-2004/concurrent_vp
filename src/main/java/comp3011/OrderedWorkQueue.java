@@ -78,10 +78,10 @@ public final class OrderedWorkQueue<T> implements AutoCloseable {
 	    	pending.add(future);
 	    	
 	    	return true;
-	    } catch (RejectedExecutionException e) {
+	    } catch (RuntimeException | Error failure) {
 	    	// submission failed: return permit
 	    	capacity.release();
-	        throw e;
+	        throw failure;
 	    }
 	}
 	

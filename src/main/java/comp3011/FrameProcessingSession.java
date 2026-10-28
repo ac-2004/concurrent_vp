@@ -139,6 +139,8 @@ public final class FrameProcessingSession implements AutoCloseable {
     }
 
     // invalidates outstanding jobs and requests executor shutdown
+    // caller remains responsible for retrieving and releasing completed
+    // frames and calling disposeIfDrained() once session has drained.
     @Override
     public void close() {
 

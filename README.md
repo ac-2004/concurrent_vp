@@ -122,9 +122,9 @@ Carries the processed JavaCV frame together with its sequence and playback metad
 These constants control the parallel processing in VideoPlayerModel:
 
 * may be different in code *
-private static final int PROCESSING_WORKERS = 5;
+private static final int PROCESSING_WORKERS = 6;
 private static final int MAX_PENDING_VIDEO_FRAMES = 8;
-private static final int DECODE_PER_PUMP = 2;
+private static final int DECODE_PER_PUMP = 3;
 private static final int MAX_GRABS_PER_SUBMISSION = 8;
 
 Worker count determines available processing parallelism. Maximum pending frames bounds outstanding work and memory use. The decoding limits reduce the work performed during one JavaFX callback.
@@ -186,7 +186,7 @@ Using 5 workers and 8 pending frames, this improved to 345% with a startup speed
 Further testing is to be executed.
 
 ### Automated Processing Benchmark
-PerformanceComparisonIT.java compares one processing worker against four workers using a reproducible synthetic workload.
+PerformanceComparisonIT.java compares one processing worker against six workers using a reproducible synthetic workload.
 
 The test uses deterministic frame contents and measures effect-processing throughput in frames per second.
 
